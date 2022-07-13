@@ -147,16 +147,18 @@ class TickerBase():
                     error message printing to console.
         """
 
+        endTs = None
+        if end is None:
+            endTs = int(_time.time())
+        elif isinstance(end, _datetime.datetime):
+            endTs = int(_time.mktime(end.timetuple()))
+        else:
+            endTs = int(_time.mktime(_time.strptime(str(end), '%Y-%m-%d')))
+
         if start or period is None or period.lower() == "max":
-            if end is None:
-                end = int(_time.time())
-            elif isinstance(end, _datetime.datetime):
-                end = int(_time.mktime(end.timetuple()))
-            else:
-                end = int(_time.mktime(_time.strptime(str(end), '%Y-%m-%d')))
             if start is None:
                 if interval == "1m":
-                    start = end - 604800  # Subtract 7 days
+                    start = endTs - 604800  # Subtract 7 days
                 else:
                     start = -631159200
             elif isinstance(start, _datetime.datetime):
@@ -164,7 +166,7 @@ class TickerBase():
             else:
                 start = int(_time.mktime(
                     _time.strptime(str(start), '%Y-%m-%d')))
-            params = {"period1": start, "period2": end}
+            params = {"period1": start, "period2": endTs}
         else:
             period = period.lower()
             params = {"range": period}
@@ -293,7 +295,7 @@ class TickerBase():
 
         # Yahoo bug fix - it often appends latest price even if after end date
         if end and not quotes.empty:
-            endDt = _pd.to_datetime(_datetime.datetime.fromtimestamp(end))
+            endDt = _pd.to_datetime(_datetime.datetime.fromtimestamp(endTs))
             if quotes.index[quotes.shape[0]-1] > endDt:
                 quotes = quotes.iloc[0:quotes.shape[0]-1]
 
